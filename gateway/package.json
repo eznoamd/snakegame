@@ -1,0 +1,7 @@
+{
+  "name": "snake-gateway",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
