@@ -75,7 +75,7 @@ O servidor envia um JSON com:
 
 Exemplo:
 
-```json
+```
 {
   "tick": 123,
   "fruits": [{"x": 14, "y": 9}],
