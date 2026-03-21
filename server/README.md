@@ -29,9 +29,10 @@ Este repositório contém um servidor de jogo _Snake_ em Java, baseado em UDP.
   - **`UdpServer`**: servidor UDP; recebe mensagens dos clientes e envia o estado visível para cada jogador.
 
 - `service`
-  - **`PlayerService`**: adiciona/remove jogadores + lógica de spawn.
+  - **`PlayerService`**: adiciona/remove jogadores + lógica de spawn + processamento de inputs e movimentação dos jogadores.
   - **`CollisionService`**: valida colisões (paredes, frutas, outros jogadores).
   - **`VisibilityService`**: filtra o estado para retornar apenas o que o jogador pode enxergar.
+  - **`FruitService`**: gera frutas periodicamente conforme `GameConfig.FRUIT_RATIO`.
 
 - `model`
   - **`Player`**: representação de cada jogador (corpo, direção, inputs pendentes, alive, etc.).
@@ -109,8 +110,8 @@ Exemplo:
 - `Input` exigia um `tick` no construtor, mas o servidor chamava com apenas `dir`.
 - `Player` não inicializava `body` e `direction`, levando a `NullPointerException` ao mover.
 - `Player.grow()` duplicava a cabeça em vez de duplicar a cauda.
-- `GameEngine.generateFood()` estava vazio (agora gera frutas com base em `FRUIT_RATIO`).
-- Jogadores mortos ainda recebiam input/movimento (corrigido para filtrar alive).
+- `GameEngine.generateFood()` foi refatorado para `FruitService.generateFruits()`.
+- Input e movimento agora são gerenciados por `PlayerService` e filtram `Player::isAlive`.
 
 ### Observações / possíveis melhorias
 

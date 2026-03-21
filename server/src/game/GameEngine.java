@@ -8,72 +8,36 @@ package game;
 //  - resolução de colisões
 //  - geração de frutas
 //
-import model.Player;
-import model.Position;
 import service.CollisionService;
-import util.Utils;
+import service.FruitService;
+import service.PlayerService;
 
 public class GameEngine {
 
-    private final GameState state;
+    private final GameState state; // Estado atual do jogo, contendo informações sobre jogadores, frutas, etc.
 
-    private final CollisionService collisionService = new CollisionService();
+    private final CollisionService collisionService = new CollisionService(); // Serviço responsável por resolver colisões entre jogadores e frutas
+
+    private final FruitService fruitService = new FruitService(); // Serviço responsável por gerar frutas
+
+    private final PlayerService playerService = new PlayerService(); // Serviço responsável por gerenciar jogadores
 
     public GameEngine(GameState state) {
         this.state = state;
     }
 
+    //
+    // Executa um ciclo de atualização do jogo (tick). Este método é chamado em intervalos regulares pelo TickLoop.
+    // Ele processa os inputs dos jogadores, move os jogadores, resolve colisões e gera frutas periodicamente.
     public void tick() {
         state.nextTick();
 
-        processInputs();
-        movePlayers();
+        playerService.processInputs(state);
+        playerService.movePlayers(state);
         collisionService.resolve(state);
 
         if (state.getTick() % 10 == 0) {
-            generateFood();
+            fruitService.generateFruits(state);
         }
-    }
-
-    private void processInputs() {
-        state.getPlayers().values().stream()
-                .filter(Player::isAlive)
-                .forEach(Player::processInput);
-    }
-
-    private void movePlayers() {
-        state.getPlayers().values().stream()
-                .filter(Player::isAlive)
-                .forEach(Player::move);
-    }
-
-    private void generateFood() {
-        int gridSize = state.getGridSize();
-        int maxFruits = (int) (gridSize * gridSize * GameConfig.FRUIT_RATIO);
-        int missing = maxFruits - state.getFruitCount();
-        if (missing <= 0) return;
-
-        for (int i = 0; i < missing; i++) {
-            for (int attempt = 0; attempt < 100; attempt++) {
-                int x = Utils.randomInt(gridSize);
-                int y = Utils.randomInt(gridSize);
-
-                if (state.getMap()[x][y] == 1) continue;
-                if (isOccupiedByPlayer(x, y)) continue;
-
-                state.getMap()[x][y] = 1;
-                state.incrementFruit();
-                break;
-            }
-        }
-    }
-
-    private boolean isOccupiedByPlayer(int x, int y) {
-        for (Player p : state.getPlayers().values()) {
-            for (Position pos : p.getBody()) {
-                if (pos.x == x && pos.y == y) return true;
-            }
-        }
-        return false;
     }
 }

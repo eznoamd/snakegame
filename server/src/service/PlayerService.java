@@ -10,7 +10,7 @@ import util.Utils;
 import java.net.SocketAddress;
 
 //
-// Service com objetivo de centralizar como o server deve criar o player;
+// Service com objetivo de centralizar como o server deve gerenciar o player;
 public class PlayerService {
 
     //
@@ -57,7 +57,22 @@ public class PlayerService {
         return false;
     }
 
-    // 
+    //
+    // Processa os inputs de cada jogador vivo
+    public void processInputs(GameState state) {
+        state.getPlayers().values().stream()
+                .filter(Player::isAlive)
+                .forEach(Player::processInput);
+    }
+
+    //
+    // Move os jogadores vivos de acordo com suas direções atuais
+    public void movePlayers(GameState state) {
+        state.getPlayers().values().stream()
+                .filter(Player::isAlive)
+                .forEach(Player::move);
+    }
+
     // Remove um player do jogo, caso ele tenha morrido ou desconectado
     public void removePlayer(GameState state, String id) {
         state.getPlayers().remove(id);

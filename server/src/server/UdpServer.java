@@ -1,6 +1,5 @@
 package server;
 
-import com.google.gson.*;
 import game.*;
 import model.*;
 import service.*;
@@ -9,6 +8,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Queue;
 import java.util.concurrent.*;
+import com.google.gson.*;
 
 //
 // Servidor UDP que recebe comandos JSON dos clientes e replica o estado visível do jogo.
@@ -16,20 +16,21 @@ import java.util.concurrent.*;
 // e atualização do estado do jogo.
 public class UdpServer {
 
-    private final DatagramSocket socket;
+    private final DatagramSocket socket; // Socket que envia e recebe pacotes
+    
+    private final GameState gameState;   // Estado global do jogo
+    
+    private final GameEngine engine;     // Engine principal do jogo, responsável por atualizar o estado do jogo a cada tick
+    
+    private final PlayerService playerService = new PlayerService(); // Add e remove de usuarios
 
-    private final GameState gameState;
-    private final GameEngine engine;
+    private final VisibilityService visibilityService = new VisibilityService(GameConfig.VIEW_RADIUS); // Padrão de visão dos jogadores
 
-    private final PlayerService playerService = new PlayerService();
-    private final VisibilityService visibilityService =
-            new VisibilityService(GameConfig.VIEW_RADIUS);
+    private final Gson gson = new Gson(); // Instancia (objetos <-> json)
+    
+    private final Queue<Runnable> eventQueue = new ConcurrentLinkedQueue<>(); // Armazena ações (Runnables)
 
-    private final Gson gson = new Gson();
-
-    private final Queue<Runnable> eventQueue = new ConcurrentLinkedQueue<>();
-
-    private TickLoop tickLoop;
+    private TickLoop tickLoop; // Loop que executa o tick do jogo em intervalos regulares
 
     public UdpServer(int port) throws Exception {
         this.socket = new DatagramSocket(port);
@@ -37,6 +38,8 @@ public class UdpServer {
         this.engine = new GameEngine(gameState);
     }
 
+    //
+    // Inicia o servidor, começando a escutar por pacotes e executando o loop de ticks do jogo.
     public void start() {
         startReceiver();
 
@@ -51,6 +54,9 @@ public class UdpServer {
         System.out.println("UDP server running on port " + GameConfig.PORT);
     }
 
+    //
+    // Inicia uma thread que fica escutando por pacotes UDP. Quando um pacote é recebido, ele é processado
+    // e a ação correspondente é adicionada à fila de eventos para ser executada no próximo tick do jogo.
     private void startReceiver() {
         new Thread(() -> {
             while (true) {
@@ -76,6 +82,9 @@ public class UdpServer {
         }).start();
     }
 
+    //
+    // Processa uma mensagem JSON recebida de um cliente. Dependendo do tipo da mensagem ("join", "input", "leave"),
+    // a ação correspondente é adicionada à fila de eventos para ser executada no próximo tick do jogo.
     private void handleMessage(String msg, SocketAddress addr) {
         try {
             JsonObject json = JsonParser.parseString(msg).getAsJsonObject();
@@ -85,6 +94,7 @@ public class UdpServer {
 
             switch (type) {
 
+                // "join": um novo jogador quer entrar no jogo. O servidor adiciona o jogador ao estado do jogo.
                 case "join":
                     String name = json.get("name").getAsString();
 
@@ -93,6 +103,7 @@ public class UdpServer {
                     );
                     break;
 
+                // "input": um jogador envia um comando de direção. O servidor adiciona esse comando à fila de inputs do jogador.
                 case "input":
                     String dirStr = json.get("dir").getAsString();
                     Direction dir = Direction.valueOf(dirStr);
@@ -105,6 +116,7 @@ public class UdpServer {
                     });
                     break;
 
+                // "leave": um jogador quer sair do jogo. O servidor remove o jogador do estado do jogo.
                 case "leave":
                     eventQueue.add(() ->
                             playerService.removePlayer(gameState, id)
@@ -117,12 +129,17 @@ public class UdpServer {
         }
     }
 
+    //
+    // Processa todas as ações na fila de eventos. Isso garante que as ações sejam executadas de forma ordenada e sem condições de corrida.
     private void processEvents() {
         while (!eventQueue.isEmpty()) {
             eventQueue.poll().run();
         }
     }
 
+    //
+    // Envia o estado visível do jogo para cada jogador. O servidor constrói um objeto de estado específico para cada jogador, 
+    // contendo apenas as informações que ele pode ver, e envia esse objeto como JSON em um pacote UDP para o endereço do jogador.
     private void sendState() {
         for (Player p : gameState.getPlayers().values()) {
             try {

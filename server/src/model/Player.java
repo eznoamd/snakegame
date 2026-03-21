@@ -29,7 +29,6 @@ public class Player {
         this.address = address;
         this.direction = direction;
 
-        // Initialize body with the head at 'start' and the tail behind it
         for (int i = 0; i < INITIAL_LENGTH; i++) {
             int x = start.x;
             int y = start.y;
@@ -43,10 +42,14 @@ public class Player {
         }
     }
 
+    //
+    // Adiciona um input do jogador na fila de inputs pendentes.
     public void addInput(Direction dir) {
         pendingInputs.add(dir);
     }
 
+    //
+    // Processa os inputs pendentes do jogador
     public void processInput() {
         while (!pendingInputs.isEmpty()) {
             Direction next = pendingInputs.poll();
@@ -57,6 +60,8 @@ public class Player {
         }
     }
 
+    //
+    // Move o player na direção atual
     public void move() {
         if (body.isEmpty() || direction == null) return;
 
@@ -67,6 +72,8 @@ public class Player {
         body.removeLast();
     }
 
+    //
+    // Faz o player crescer
     public void grow() {
         Position tail = body.peekLast();
         if (tail != null) {
@@ -80,40 +87,8 @@ public class Player {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public Deque<Position> getBody() {
         return body;
-    }
-
-    public void setBody(Deque<Position> body) {
-        this.body = body;
-    }
-
-    public Direction getDirection() {
-        return direction;
-    }
-
-    public void setDirection(Direction direction) {
-        this.direction = direction;
-    }
-
-    public Queue<Direction> getPendingInputs() {
-        return pendingInputs;
-    }
-
-    public void setPendingInputs(Queue<Direction> pendingInputs) {
-        this.pendingInputs = pendingInputs;
     }
 
     public boolean isAlive() {
@@ -128,9 +103,7 @@ public class Player {
         return address;
     }
 
-    public void setAddress(SocketAddress address) {
-        this.address = address;
+    public Position getHead(){ 
+        return body.peekFirst(); 
     }
-
-    public Position getHead(){ return body.peekFirst(); }
 }
