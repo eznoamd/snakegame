@@ -1,6 +1,6 @@
 # Snake Game Server (Java)
 
-## Modelo de Classes (High level)
+## Classes da API v2
 
 ### Pacotes principais
 
