@@ -1,0 +1,43 @@
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Documentation
+README.md
+docs/
+
+# Test files
+test_client.py
+**/test/
+**/tests/
+
+# Build artifacts
+server/out/
+server/target/
+*.class
+*.jar
+build/
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Logs
+*.log
+logs/
+
+# Docker files (except the ones we need)
+Dockerfile*
+docker-compose*
+.dockerignore
