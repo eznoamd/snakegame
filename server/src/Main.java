@@ -1,6 +1,6 @@
 import server.UdpServer;
 import server.UdpWebSocketGateway;
-import game.ServerConfig;
+import config.ServerConfig;
 
 public class Main {
 

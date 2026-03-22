@@ -1,8 +1,10 @@
 package server;
 
+import config.GameConfig;
 import game.*;
 import model.*;
 import service.*;
+import util.MessageUtils;
 
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -51,8 +53,6 @@ public class UdpServer {
         }, GameConfig.TICK_RATE);
 
         tickLoop.start();
-
-        System.out.println("UDP server running on port " + GameConfig.PORT);
     }
 
     //
@@ -88,7 +88,7 @@ public class UdpServer {
     // a ação correspondente é adicionada à fila de eventos para ser executada no próximo tick do jogo.
     private void handleMessage(String msg, SocketAddress addr) {
         try {
-            JsonObject json = JsonParser.parseString(msg).getAsJsonObject();
+            JsonObject json = MessageUtils.fromJson(msg);
 
             String type = json.get("type").getAsString();
             String id = json.has("id")
@@ -99,14 +99,7 @@ public class UdpServer {
 
             if (p != null) {
                 p.setAddress(addr);
-
-                if (json.has("id")) {
-                    // veio do gateway (web)
-                    p.setPort(3001);
-                } else {
-                    // cliente UDP direto (desktop)
-                    p.setPort(((InetSocketAddress) addr).getPort());
-                }
+                p.setPort(MessageUtils.getPortForMessage(json, addr));
             }
             switch (type) {
 
@@ -119,11 +112,8 @@ public class UdpServer {
 
                         Player newPlayer = gameState.getPlayers().get(id);
                         if (newPlayer != null) {
-                            if (json.has("id")) {
-                                newPlayer.setPort(3001);
-                            } else {
-                                newPlayer.setPort(((InetSocketAddress) addr).getPort());
-                            }
+                            newPlayer.setPort(MessageUtils.getPortForMessage(json, addr));
+                            newPlayer.setScore(100); // Changed the initial score to 100
                         }
                     });
                     break;
@@ -134,9 +124,9 @@ public class UdpServer {
                     Direction dir = Direction.valueOf(dirStr);
 
                     eventQueue.add(() -> {
-                        Player p = gameState.getPlayers().get(id);
-                        if (p != null) {
-                            p.addInput(dir);
+                        Player pl = gameState.getPlayers().get(id);
+                        if (pl != null) {
+                            pl.addInput(dir);
                         }
                     });
                     break;
@@ -172,8 +162,11 @@ public class UdpServer {
                 if (state == null) continue;
 
                 state.put("selfId", p.getId());
-                byte[] data = gson.toJson(state)
-                        .getBytes(StandardCharsets.UTF_8);
+                state.put("score", p.getScore());
+                state.put("fruitsEaten", p.getFruitsEaten());
+                
+                String stateMessage = MessageUtils.createStateMessage(state, p.getId());
+                byte[] data = stateMessage.getBytes(StandardCharsets.UTF_8);
 
                 InetSocketAddress target = new InetSocketAddress(
                         ((InetSocketAddress) p.getAddress()).getAddress(),

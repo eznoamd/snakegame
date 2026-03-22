@@ -19,6 +19,8 @@ public class Player {
     private boolean alive = true;  // Se este player esta vivo atualmente
     private SocketAddress address; // Endereço do socket do player
     private int port;
+    private int score = 0;  // Pontuação do jogador
+    private int fruitsEaten = 0;  // Contador de frutas comidas
 
     public Player(String id, String name, SocketAddress address) {
         this(id, name, address, new Position(0, 0), Direction.RIGHT);
@@ -113,4 +115,19 @@ public class Player {
     public int getPort() { return port; }
 
     public void setPort(int port) { this.port = port; }
+
+    public int getScore() { return score; }
+    public void setScore(int score) { this.score = score; }
+    
+    public int getFruitsEaten() { return fruitsEaten; }
+    public void setFruitsEaten(int fruitsEaten) { this.fruitsEaten = fruitsEaten; }
+    
+    public void addScore(int points) { 
+        this.score += points; 
+    }
+    
+    public void addFruit() { 
+        this.fruitsEaten++; 
+        this.addScore(10);
+    }
 }

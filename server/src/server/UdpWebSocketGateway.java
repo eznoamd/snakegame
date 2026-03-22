@@ -10,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.google.gson.*;
+import util.MessageUtils;
 
 //
 // Gateway que funciona como ponte entre clientes WebSocket e o servidor UDP.
@@ -17,17 +18,17 @@ import com.google.gson.*;
 // Cada cliente WebSocket recebe um ID único que é usado para rotear mensagens corretamente.
 public class UdpWebSocketGateway extends WebSocketServer {
 
-    private int udpPort; // Porta do servidor UDP para onde as mensagens serão encaminhadas
-    private int returnPort; // Porta UDP onde o gateway escuta as respostas do servidor
-    private String udpHost; // Endereço do servidor UDP
+    private final DatagramSocket udpSocket;
+    private final InetAddress udpServerAddress;
+    private final int udpServerPort;
+    private final int returnPort;
 
-    private DatagramSocket udpSocket; // Socket para enviar mensagens ao servidor UDP
-    private InetAddress udpAddress; // Endereço do servidor UDP
+    // Mapeamentos para gerenciar clientes WebSocket
+    private final Map<String, WebSocket> playerIdToConnection = new ConcurrentHashMap<>();
+    private final Map<WebSocket, String> connectionToPlayerId = new ConcurrentHashMap<>();
 
-    private final Map<String, WebSocket> clients = new ConcurrentHashMap<>(); // Mapeia ID do jogador -> conexão WebSocket
-    private final Map<WebSocket, String> reverseClients = new ConcurrentHashMap<>(); // Mapeia conexão WebSocket -> ID do jogador
-
-    private final Gson gson = new Gson(); // Conversor JSON para serialização de mensagens
+    private final Gson gson = new Gson();
+    private volatile boolean running = false;
 
     //
     // Construtor que configura o gateway com as portas e endereço do servidor UDP.
@@ -35,12 +36,10 @@ public class UdpWebSocketGateway extends WebSocketServer {
     public UdpWebSocketGateway(int wsPort, int udpPort, int returnPort, String udpHost) throws Exception {
         super(new InetSocketAddress(wsPort));
 
-        this.udpPort = udpPort;
-        this.udpHost = udpHost;
+        this.udpServerPort = udpPort;
         this.returnPort = returnPort;
-
-        udpSocket = new DatagramSocket();
-        udpAddress = InetAddress.getByName(udpHost);
+        this.udpServerAddress = InetAddress.getByName(udpHost);
+        this.udpSocket = new DatagramSocket();
 
         startUdpListener();
     }
@@ -52,8 +51,8 @@ public class UdpWebSocketGateway extends WebSocketServer {
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         String playerId = UUID.randomUUID().toString();
 
-        clients.put(playerId, conn);
-        reverseClients.put(conn, playerId);
+        playerIdToConnection.put(playerId, conn);
+        connectionToPlayerId.put(conn, playerId);
 
         System.out.println("WS conectado: " + playerId);
     }
@@ -64,50 +63,45 @@ public class UdpWebSocketGateway extends WebSocketServer {
     @Override
     public void onMessage(WebSocket conn, String message) {
         try {
-            JsonObject data = gson.fromJson(message, JsonObject.class);
-
-            String playerId = reverseClients.get(conn);
-            data.addProperty("id", playerId);
-
-            byte[] bytes = gson.toJson(data).getBytes(StandardCharsets.UTF_8);
+            String messageWithId = MessageUtils.addPlayerId(message, connectionToPlayerId.get(conn));
+            byte[] bytes = messageWithId.getBytes(StandardCharsets.UTF_8);
 
             DatagramPacket packet = new DatagramPacket(
                     bytes,
                     bytes.length,
-                    udpAddress,
-                    udpPort
+                    udpServerAddress,
+                    udpServerPort
             );
 
             udpSocket.send(packet);
 
         } catch (Exception e) {
+            System.err.println("Erro ao processar mensagem do WebSocket: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        String playerId = reverseClients.remove(conn);
+        String playerId = connectionToPlayerId.remove(conn);
         if (playerId != null) {
-            clients.remove(playerId);
+            playerIdToConnection.remove(playerId);
 
             try {
-                JsonObject leaveMsg = new JsonObject();
-                leaveMsg.addProperty("type", "leave");
-                leaveMsg.addProperty("id", playerId);
-
-                byte[] bytes = gson.toJson(leaveMsg).getBytes(StandardCharsets.UTF_8);
+                String leaveMessage = MessageUtils.createLeaveMessage(playerId);
+                byte[] bytes = leaveMessage.getBytes(StandardCharsets.UTF_8);
 
                 DatagramPacket packet = new DatagramPacket(
                         bytes,
                         bytes.length,
-                        udpAddress,
-                        udpPort
+                        udpServerAddress,
+                        udpServerPort
                 );
 
                 udpSocket.send(packet);
 
             } catch (Exception e) {
+                System.err.println("Erro ao enviar mensagem leave: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -153,7 +147,7 @@ public class UdpWebSocketGateway extends WebSocketServer {
                     if (!state.has("selfId")) continue;
 
                     String playerId = state.get("selfId").getAsString();
-                    WebSocket ws = clients.get(playerId);
+                    WebSocket ws = playerIdToConnection.get(playerId);
 
                     if (ws != null && ws.isOpen()) {
                         ws.send(msg);

@@ -1,6 +1,6 @@
 package service;
 
-import game.GameConfig;
+import config.GameConfig;
 import game.GameState;
 import model.Player;
 import model.Position;
