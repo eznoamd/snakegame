@@ -101,12 +101,7 @@ O sistema iniciará dois serviços:
 
 ### Download manual das dependências
 
-**Opção 1 - Script automático (Windows):**
-```powershell
-.\download_deps.bat
-```
-
-**Opção 2 - Download manual:**
+**Download manual:**
 Se não estiver usando Maven, baixe os JARs necessários:
 - [Gson](https://repo1.maven.org/maven2/com/google/code/gson/gson/2.8.9/gson-2.8.9.jar)
 - [Java-WebSocket](https://repo1.maven.org/maven2/org/java-websocket/Java-WebSocket/1.5.3/Java-WebSocket-1.5.3.jar)
