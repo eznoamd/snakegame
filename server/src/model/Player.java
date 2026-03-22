@@ -18,6 +18,7 @@ public class Player {
     private Queue<Direction> pendingInputs = new LinkedList<>(); // Fila de inputs do player (não verificado o quão optimizado isso é)
     private boolean alive = true;  // Se este player esta vivo atualmente
     private SocketAddress address; // Endereço do socket do player
+    private int port;
 
     public Player(String id, String name, SocketAddress address) {
         this(id, name, address, new Position(0, 0), Direction.RIGHT);
@@ -99,6 +100,8 @@ public class Player {
         this.alive = alive;
     }
 
+    public void setAddress(SocketAddress address) { this.address = address; }
+
     public SocketAddress getAddress() {
         return address;
     }
@@ -106,4 +109,8 @@ public class Player {
     public Position getHead(){ 
         return body.peekFirst(); 
     }
+
+    public int getPort() { return port; }
+
+    public void setPort(int port) { this.port = port; }
 }

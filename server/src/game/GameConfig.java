@@ -1,10 +1,7 @@
 package game;
 
 //
-// Configurações do servidor do jogo
-//
-// Idealmente deveria separar o contexto (Game) do contexto (UDP/server)
-// mas momentaneamente manterei assim pela simplicidade
+// Configurações do jogo
 public class GameConfig {
 
     // tamanho do grid
@@ -15,11 +12,10 @@ public class GameConfig {
     public static final int VIEW_RADIUS = 12;
     // qual a porcentagem de frutas no mapa
     public static final double FRUIT_RATIO = (0.6);
-    // porta do servidor
-    public static final int PORT = 3000;
     // limite de caracteres no nome
     public static final int NAME_LIMIT = 20;
 
     // evita ser instanciado
     private GameConfig() {}
 }
+

@@ -6,6 +6,7 @@ import service.*;
 
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 import com.google.gson.*;
@@ -90,17 +91,41 @@ public class UdpServer {
             JsonObject json = JsonParser.parseString(msg).getAsJsonObject();
 
             String type = json.get("type").getAsString();
-            String id = addr.toString();
+            String id = json.has("id")
+                    ? json.get("id").getAsString()
+                    : addr.toString();
 
+            Player p = gameState.getPlayers().get(id);
+
+            if (p != null) {
+                p.setAddress(addr);
+
+                if (json.has("id")) {
+                    // veio do gateway (web)
+                    p.setPort(3001);
+                } else {
+                    // cliente UDP direto (desktop)
+                    p.setPort(((InetSocketAddress) addr).getPort());
+                }
+            }
             switch (type) {
 
                 // "join": um novo jogador quer entrar no jogo. O servidor adiciona o jogador ao estado do jogo.
                 case "join":
                     String name = json.get("name").getAsString();
 
-                    eventQueue.add(() ->
-                            playerService.addPlayer(gameState, id, name, addr)
-                    );
+                    eventQueue.add(() -> {
+                        playerService.addPlayer(gameState, id, name, addr);
+
+                        Player newPlayer = gameState.getPlayers().get(id);
+                        if (newPlayer != null) {
+                            if (json.has("id")) {
+                                newPlayer.setPort(3001);
+                            } else {
+                                newPlayer.setPort(((InetSocketAddress) addr).getPort());
+                            }
+                        }
+                    });
                     break;
 
                 // "input": um jogador envia um comando de direção. O servidor adiciona esse comando à fila de inputs do jogador.
@@ -143,16 +168,22 @@ public class UdpServer {
     private void sendState() {
         for (Player p : gameState.getPlayers().values()) {
             try {
-                Object state = visibilityService.buildState(gameState, p.getId());
+                Map<String, Object> state = visibilityService.buildState(gameState, p.getId());
                 if (state == null) continue;
 
+                state.put("selfId", p.getId());
                 byte[] data = gson.toJson(state)
                         .getBytes(StandardCharsets.UTF_8);
+
+                InetSocketAddress target = new InetSocketAddress(
+                        ((InetSocketAddress) p.getAddress()).getAddress(),
+                        p.getPort()
+                );
 
                 DatagramPacket packet = new DatagramPacket(
                         data,
                         data.length,
-                        (InetSocketAddress) p.getAddress()
+                        target
                 );
 
                 socket.send(packet);
