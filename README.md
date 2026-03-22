@@ -1,8 +1,5 @@
 ## SNAKE GAME
 
-Este é um jogo criado com objetivos de aprendizado de UDP na prática e aplicação de gateway para conversão de server para WebSocket (navegadores).
+Esta é a primeira versão do Snake Game com a API v1.
 
-Por ser a primeira versão, esta ainda possuí bugs e necessita revisão lógica.
-
-> [!CAUTION] 
-> novo servidor ainda não integrado com frontend
+Decidi manter salva aqui pois acho interessante comparar como o projeto evolui com o tempo, escalando, e claro, mostrando a diferença no nivel de aprendizado aplicado. Vale ressaltar que esta versão é cheia de bugs e não é completamente funcional, possuindo delays e erros de criação do personagem.
