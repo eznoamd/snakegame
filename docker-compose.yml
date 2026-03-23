@@ -7,15 +7,9 @@ services:
       dockerfile: Dockerfile
     container_name: snake-game-server
     ports:
-      - "3000:3000/udp"  # UDP Server port
-      - "8080:8080"      # WebSocket Gateway port
-      - "3001:3001/udp"  # Gateway return port
+      - "3000:3000/udp"
+      - "8080:8080"
+      - "3001:3001/udp"
     restart: unless-stopped
     environment:
       - JAVA_OPTS=-Xms256m -Xmx512m
-    networks:
-      - snake-game-network
-
-networks:
-  snake-game-network:
-    driver: bridge
