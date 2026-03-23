@@ -1,5 +1,5 @@
-# Use OpenJDK 8 as base image (compatible with the project requirements)
-FROM openjdk:8-jdk-slim
+# Use OpenJDK 11 as base image (8 is deprecated, 11 is LTS)
+FROM openjdk:11-jdk-slim
 
 # Set working directory
 WORKDIR /app
