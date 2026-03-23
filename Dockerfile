@@ -1,5 +1,14 @@
-# Use OpenJDK 11 as base image (8 is deprecated, 11 is LTS)
-FROM openjdk:11-jdk-slim
+# Use Ubuntu base and install JDK manually
+FROM ubuntu:20.04
+
+# Avoid interactive prompts during installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install OpenJDK 11 and basic tools
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk wget curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
