@@ -10,6 +10,9 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Queue;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.*;
 import com.google.gson.*;
 
@@ -62,7 +65,7 @@ public class UdpServer {
         new Thread(() -> {
             while (true) {
                 try {
-                    byte[] buffer = new byte[1024];
+                    byte[] buffer = new byte[65507];
 
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     socket.receive(packet);
@@ -109,16 +112,11 @@ public class UdpServer {
 
                     eventQueue.add(() -> {
                         playerService.addPlayer(gameState, id, name, addr);
-
                         Player newPlayer = gameState.getPlayers().get(id);
                         if (newPlayer != null) {
                             newPlayer.setAddress(addr);
-
-                            // 🔥 FORÇA PORTA REAL DO CLIENTE UDP
                             int port = ((InetSocketAddress) addr).getPort();
                             newPlayer.setPort(port);
-
-                            newPlayer.setScore(100);
                         }
                     });
                     break;
@@ -161,6 +159,8 @@ public class UdpServer {
     // Envia o estado visível do jogo para cada jogador. O servidor constrói um objeto de estado específico para cada jogador, 
     // contendo apenas as informações que ele pode ver, e envia esse objeto como JSON em um pacote UDP para o endereço do jogador.
     private void sendState() {
+        List<String> toRemove = new ArrayList<>();
+
         for (Player p : gameState.getPlayers().values()) {
             try {
                 Map<String, Object> state = visibilityService.buildState(gameState, p.getId());
@@ -169,7 +169,7 @@ public class UdpServer {
                 state.put("selfId", p.getId());
                 state.put("score", p.getScore());
                 state.put("fruitsEaten", p.getFruitsEaten());
-                
+
                 String stateMessage = MessageUtils.createStateMessage(state, p.getId());
                 byte[] data = stateMessage.getBytes(StandardCharsets.UTF_8);
 
@@ -178,18 +178,21 @@ public class UdpServer {
                         p.getPort()
                 );
 
-                DatagramPacket packet = new DatagramPacket(
-                        data,
-                        data.length,
-                        target
-                );
-                System.out.println("Enviando para: " + target);
-                System.out.println("Mensagem: " + stateMessage);
-                socket.send(packet);
+                socket.send(new DatagramPacket(data, data.length, target));
+
+                // Marca para remoção após notificar
+                if (!p.isAlive()) {
+                    toRemove.add(p.getId());
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        // Remove mortos depois de notificar
+        for (String id : toRemove) {
+            gameState.getPlayers().remove(id);
         }
     }
 }
