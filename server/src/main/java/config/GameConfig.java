@@ -11,7 +11,7 @@ public class GameConfig {
     // o quanto o player consegue "ver" e renderizar do mapa
     public static final int VIEW_RADIUS = 12;
     // qual a porcentagem de frutas no mapa
-    public static final double FRUIT_RATIO = (0.6);
+    public static final double FRUIT_RATIO = (0.05);
     // limite de caracteres no nome
     public static final int NAME_LIMIT = 20;
 

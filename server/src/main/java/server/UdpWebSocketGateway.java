@@ -134,7 +134,7 @@ public class UdpWebSocketGateway extends WebSocketServer {
             try {
                 DatagramSocket listener = new DatagramSocket(this.returnPort);
 
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[65507];
 
                 while (true) {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);

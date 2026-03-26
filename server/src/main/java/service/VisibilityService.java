@@ -47,7 +47,7 @@ public class VisibilityService {
 
         for (Player p : state.getPlayers().values()) {
 
-            //if (!p.isAlive()) continue;
+            if (!p.isAlive()) continue;
 
             if (!isPlayerVisible(p, head)) continue;
 
@@ -84,7 +84,9 @@ public class VisibilityService {
     //
     // Verifica se o player em questão é visivel
     private boolean isPlayerVisible(Player p, Position center) {
-        for (Position pos : p.getBody()) {
+        List<Position> snapshot = new ArrayList<>(p.getBody()); // ← adicione isso
+
+        for (Position pos : snapshot) { // ← itere o snapshot
             if (Math.abs(pos.x - center.x) <= viewRadius &&
                     Math.abs(pos.y - center.y) <= viewRadius) {
                 return true;
@@ -97,11 +99,11 @@ public class VisibilityService {
     // Transforma a lista de positions (body) em uma lista de maps -> List('x': x, 'y': y)
     private List<Map<String, Integer>> bodyToList(Player p) {
         List<Map<String, Integer>> body = new ArrayList<>();
+        List<Position> snapshot = new ArrayList<>(p.getBody()); // ← adicione isso
 
-        for (Position pos : p.getBody()) {
+        for (Position pos : snapshot) { // ← itere o snapshot, não p.getBody()
             body.add(posToMap(pos.x, pos.y));
         }
-
         return body;
     }
 
