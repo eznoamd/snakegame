@@ -112,8 +112,13 @@ public class UdpServer {
 
                         Player newPlayer = gameState.getPlayers().get(id);
                         if (newPlayer != null) {
-                            newPlayer.setPort(MessageUtils.getPortForMessage(json, addr));
-                            newPlayer.setScore(100); // Changed the initial score to 100
+                            newPlayer.setAddress(addr);
+
+                            // 🔥 FORÇA PORTA REAL DO CLIENTE UDP
+                            int port = ((InetSocketAddress) addr).getPort();
+                            newPlayer.setPort(port);
+
+                            newPlayer.setScore(100);
                         }
                     });
                     break;
@@ -178,7 +183,8 @@ public class UdpServer {
                         data.length,
                         target
                 );
-
+                System.out.println("Enviando para: " + target);
+                System.out.println("Mensagem: " + stateMessage);
                 socket.send(packet);
 
             } catch (Exception e) {

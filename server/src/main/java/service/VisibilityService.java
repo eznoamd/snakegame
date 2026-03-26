@@ -22,10 +22,11 @@ public class VisibilityService {
     public Map<String, Object> buildState(GameState state, String playerId) {
 
         Player self = state.getPlayers().get(playerId);
-        if (self == null || !self.isAlive()) return null;
+        if (self == null) return null;  
 
+        if (self.getBody().isEmpty()) return null;
         Position head = self.getHead();
-
+    
         Map<String, Object> result = new HashMap<>();
         result.put("tick", state.getTick());
 
@@ -46,7 +47,7 @@ public class VisibilityService {
 
         for (Player p : state.getPlayers().values()) {
 
-            if (!p.isAlive()) continue;
+            //if (!p.isAlive()) continue;
 
             if (!isPlayerVisible(p, head)) continue;
 
@@ -62,6 +63,7 @@ public class VisibilityService {
         Map<String, Object> selfData = new HashMap<>();
         selfData.put("id", self.getId());
         selfData.put("body", bodyToList(self));
+        selfData.put("alive", self.isAlive());
 
         result.put("self", selfData);
 

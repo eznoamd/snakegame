@@ -10,78 +10,72 @@ TESTE FEITO COM IA, NÂO HÀ GARANTIA QUE O SERVIDOR FUNCIONE CORRETAMENTE COM E
 
 
 
-
-
-
-
-"""Cliente UDP simples para testar o servidor Snake.
-
-Uso:
-  python test_client.py [HOST] [PORT] [NAME]
-
-Exemplo:
-  python test_client.py 127.0.0.1 3000 Teste
-
-O cliente:
-- envia um `join` com nome
-- escuta mensagens do servidor (estado) e imprime o JSON recebido
-- envia inputs aleatórios (UP/DOWN/LEFT/RIGHT) a cada 0.5s
-- encerra após 10 segundos e envia `leave`
-"""
-
-import json
-import random
 import socket
-import sys
+import json
 import time
 
-HOST = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
-PORT = int(sys.argv[2]) if len(sys.argv) > 2 else 3000
-NAME = sys.argv[3] if len(sys.argv) > 3 else "Tester"
+SERVER_ADDR = ("127.0.0.1", 3000)
 
-DIRECTIONS = ["UP", "DOWN", "LEFT", "RIGHT"]
+def main():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    # bind em porta aleatória (igual Rust)
+    sock.bind(("0.0.0.0", 0))
+    print("Cliente rodando em:", sock.getsockname())
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.settimeout(1.0)
+    # timeout pra não travar
+    sock.settimeout(2)
 
-addr = (HOST, PORT)
+    # envia join
+    join_msg = {
+        "type": "join",
+        "name": "PythonTest"
+    }
 
-# Envia join
-msg = {"type": "join", "name": NAME}
-sock.sendto(json.dumps(msg).encode("utf-8"), addr)
-print("[CLIENT] Enviado join ->", msg)
+    sock.sendto(json.dumps(join_msg).encode(), SERVER_ADDR)
+    print("Join enviado")
 
-start = time.time()
-next_input = start + 0.5
+    last_input = time.time()
 
-try:
     while True:
-        now = time.time()
-        if now >= next_input:
-            # envia input aleatório
-            dir = random.choice(DIRECTIONS)
-            msg = {"type": "input", "dir": dir}
-            sock.sendto(json.dumps(msg).encode("utf-8"), addr)
-            print("[CLIENT] Enviado input ->", msg)
-            next_input = now + 0.5
-
         try:
-            # Aumenta buffer para evitar erros de datagrama maior que o buffer
-            data, _ = sock.recvfrom(65535)
-            state = json.loads(data.decode("utf-8"))
-            print("[CLIENT] Estado recebido ->", json.dumps(state, indent=2))
+            data, addr = sock.recvfrom(4096)
+            text = data.decode()
+
+            print("\n=== RECEBIDO ===")
+            print(text)
+
+            # tenta parsear
+            try:
+                obj = json.loads(text)
+                print("JSON válido")
+
+                self_data = obj.get("self")
+
+                if self_data:
+                    alive = self_data.get("alive", True)
+                    print("alive:", alive)
+
+                    if not alive:
+                        print(">>> PLAYER MORREU — ENCERRANDO <<<")
+                        break
+                        
+            except Exception as e:
+                print("JSON inválido:", e)
+
         except socket.timeout:
-            pass
-        except OSError as e:
-            print(f"[CLIENT] Erro ao receber: {e}")
-            break
+            print("... aguardando dados ...")
 
-        if now - start > 10:
-            break
+        # manda input de vez em quando
+        if time.time() - last_input > 1:
+            input_msg = {
+                "type": "input",
+                "dir": "RIGHT"
+            }
+            sock.sendto(json.dumps(input_msg).encode(), SERVER_ADDR)
+            print("→ input enviado")
+            last_input = time.time()
 
-finally:
-    # envia leave
-    msg = {"type": "leave"}
-    sock.sendto(json.dumps(msg).encode("utf-8"), addr)
-    print("[CLIENT] Enviado leave")
-    sock.close()
+
+if __name__ == "__main__":
+    main()

@@ -51,21 +51,8 @@ public class MessageUtils {
     //
     // Cria mensagem de estado do jogo para enviar ao cliente
     public static String createStateMessage(Map<String, Object> state, String selfId) {
-        JsonObject msg = new JsonObject();
-        msg.addProperty("selfId", selfId);
-        
-        // Adiciona todas as propriedades do estado
-        for (Map.Entry<String, Object> entry : state.entrySet()) {
-            if (entry.getValue() instanceof String) {
-                msg.addProperty(entry.getKey(), (String) entry.getValue());
-            } else if (entry.getValue() instanceof Number) {
-                msg.addProperty(entry.getKey(), (Number) entry.getValue());
-            } else if (entry.getValue() instanceof Boolean) {
-                msg.addProperty(entry.getKey(), (Boolean) entry.getValue());
-            }
-        }
-        
-        return gson.toJson(msg);
+        state.put("selfId", selfId);
+        return gson.toJson(state);
     }
     
     //
