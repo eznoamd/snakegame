@@ -13,7 +13,7 @@ public class Player {
 
     private String id;   // ID do player
     private String name; // Nome do player
-    private Deque<Position> body = new ArrayDeque<>(); // Corpo do player (primeiro item é a cabeça do player)
+    private Deque<Position> body = new LinkedList<>(); // Corpo do player (primeiro item é a cabeça do player)
     private Direction direction;                       // Direção de movimento do player com base em seu Input
     private Queue<Direction> pendingInputs = new LinkedList<>(); // Fila de inputs do player (não verificado o quão optimizado isso é)
     private boolean alive = true;  // Se este player esta vivo atualmente
@@ -21,7 +21,6 @@ public class Player {
     private int port;
     private int score = 0;  // Pontuação do jogador
     private int fruitsEaten = 0;  // Contador de frutas comidas
-    private boolean shouldGrow = false; // Flag para indicar se o jogador deve crescer no próximo movimento
 
     public Player(String id, String name, SocketAddress address) {
         this(id, name, address, new Position(0, 0), Direction.RIGHT);
@@ -65,8 +64,7 @@ public class Player {
     }
 
     //
-    // Move o player na direção atual e atualiza seu corpo. 
-    // Se a flag shouldGrow estiver ativa, o player crescerá (não removerá o rabo) e a flag será resetada.
+    // Move o player na direção atual
     public void move() {
         if (body.isEmpty() || direction == null) return;
 
@@ -74,20 +72,16 @@ public class Player {
         Position next = Utils.getNextPos(head, direction);
 
         body.addFirst(next);
-        
-        // Se não for para crescer, removemos o rabo normalmente.
-        // Se for para crescer, mantemos o rabo (aumentando o tamanho) e resetamos a flag.
-        if (!shouldGrow) {
-            body.removeLast();
-        } else {
-            shouldGrow = false;
-        }
+        body.removeLast();
     }
 
     //
     // Faz o player crescer
     public void grow() {
-        this.shouldGrow = true; 
+        Position tail = body.peekLast();
+        if (tail != null) {
+            body.addLast(tail.copy());
+        }
     }
 
     //
@@ -97,7 +91,7 @@ public class Player {
     }
 
     public Deque<Position> getBody() {
-        return new ArrayDeque<>(body);
+        return body;
     }
 
     public boolean isAlive() {
@@ -114,9 +108,8 @@ public class Player {
         return address;
     }
 
-    public Position getHead() {
-        Position head = body.peekFirst();
-        return head != null ? head.copy() : null;
+    public Position getHead(){ 
+        return body.peekFirst(); 
     }
 
     public int getPort() { return port; }

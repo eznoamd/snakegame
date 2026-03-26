@@ -16,20 +16,15 @@ public class PlayerService {
     //
     // Adiciona um player ao jogo, criando um novo Player e colocando ele no GameState
     public void addPlayer(GameState state, String id, String name, SocketAddress addr) {
-        if (state.getPlayers().containsKey(id) && state.getPlayers().get(id).isAlive()) {
-            return;
-        }
+        if (state.getPlayers().containsKey(id)) return;
 
-        String cleanName = Utils.sanitizeName(name, GameConfig.NAME_LIMIT);
+        name = Utils.sanitizeName(name, GameConfig.NAME_LIMIT);
+
         Position spawn = findSpawnPosition(state);
         Direction dir = Utils.chooseDirection(spawn.x, spawn.y, state.getGridSize());
 
-        Player p = new Player(id, cleanName, addr, spawn, dir);
-         
-        p.setScore(0);
+        Player p = new Player(id, name, addr, spawn, dir);
         state.getPlayers().put(id, p);
-    
-        System.out.println("LOG: Player '" + cleanName + "' entrou em " + spawn.x + "," + spawn.y);
     }
 
     //
